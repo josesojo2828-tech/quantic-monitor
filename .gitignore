@@ -1,5 +1,26 @@
+# Config local y secretos
 .env
+.env.*
+!.env.example
+
+# Datos locales
+data/
 *.log
-.DS_Store
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backups
+*.bak
+*.backup
