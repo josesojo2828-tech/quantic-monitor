@@ -32,7 +32,7 @@ Stack de monitoreo centralizado para servidores, todo dockerizado. Métricas del
 
 ```bash
 # Clonar
-git clone https://github.com/josesojo2828/quantic-monitor.git
+git clone https://github.com/josesojo2828-tech/quantic-monitor.git
 cd quantic-monitor
 
 # Opcional: cambiar password de Grafana

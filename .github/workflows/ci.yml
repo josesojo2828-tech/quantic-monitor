@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate YAML syntax
+        run: |
+          python3 - <<'PY'
+          import glob, sys, yaml
+          failed = False
+          for path in glob.glob("**/*.y*ml", recursive=True):
+              try:
+                  yaml.safe_load(open(path))
+              except Exception as exc:
+                  print(f"{path}: {exc}")
+                  failed = True
+          sys.exit(1 if failed else 0)
+          PY
+
+      - name: Validate compose file
+        run: docker compose config -q
+
+      - name: Validate Prometheus rules
+        run: |
+          docker run --rm \
+            -v "$PWD/prometheus:/cfg:ro" \
+            --entrypoint promtool \
+            prom/prometheus:v3.2.1 check rules /cfg/alert.rules.yml
+
+      - name: Validate Alertmanager config
+        run: |
+          docker run --rm \
+            -v "$PWD/alertmanager:/cfg:ro" \
+            prom/alertmanager:v0.28.1 \
+            amtool check-config /cfg/alertmanager.yml
+
+      - name: Lint auth-exporter
+        run: |
+          pip install ruff
+          ruff check --select E9,F63,F7,F82 auth-exporter

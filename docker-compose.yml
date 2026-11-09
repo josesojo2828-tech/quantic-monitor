@@ -34,13 +34,28 @@ services:
     ports:
       - "15102:9090"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml:ro
       - prometheus-data:/prometheus
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=60d
       - --storage.tsdb.retention.size=20GB
+    restart: always
+    networks:
+      - quantic-monitor
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: quantic-alertmanager
+    ports:
+      - "15104:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
     restart: always
     networks:
       - quantic-monitor

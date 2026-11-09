@@ -1,0 +1,73 @@
+groups:
+  - name: node
+    interval: 30s
+    rules:
+      - alert: NodeDown
+        expr: up{job="node"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node {{ $labels.instance }} is down"
+          description: "Prometheus has been unable to scrape node-exporter on {{ $labels.instance }} for more than 2 minutes."
+
+      - alert: HighDiskUsage
+        expr: |
+          (1 - node_filesystem_avail_bytes{job="node",fstype!~"tmpfs|overlay|squashfs"}
+               / node_filesystem_size_bytes{job="node",fstype!~"tmpfs|overlay|squashfs"}) * 100 > 85
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk usage above 85% on {{ $labels.mountpoint }}"
+          description: "{{ $labels.mountpoint }} on {{ $labels.instance }} is {{ printf \"%.1f\" $value }}% full."
+
+      - alert: HighMemoryUsage
+        expr: |
+          (1 - node_memory_MemAvailable_bytes{job="node"}
+               / node_memory_MemTotal_bytes{job="node"}) * 100 > 90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Memory usage above 90% on {{ $labels.instance }}"
+          description: "{{ printf \"%.1f\" $value }}% of memory is in use on {{ $labels.instance }}."
+
+      - alert: FilesystemReadOnly
+        expr: node_filesystem_readonly{job="node",fstype!~"tmpfs|overlay|squashfs"} == 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Filesystem {{ $labels.mountpoint }} is read-only"
+          description: "{{ $labels.mountpoint }} on {{ $labels.instance }} has been remounted read-only, usually after I/O errors."
+
+  - name: auth
+    interval: 30s
+    rules:
+      - alert: AuthExporterDown
+        expr: up{job="auth"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "auth-exporter is not being scraped"
+          description: "Security metrics are blind: auth-exporter on {{ $labels.instance }} has been down for 5 minutes."
+
+      - alert: SSHBruteForce
+        expr: sum by (ip) (increase(auth_ssh_failed_total[5m])) > 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SSH brute force attempt from {{ $labels.ip }}"
+          description: "More than 10 failed SSH logins from {{ $labels.ip }} in the last 5 minutes."
+
+      - alert: SudoCommandSpike
+        expr: sum by (user) (increase(auth_sudo_total[10m])) > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Unusual sudo activity by {{ $labels.user }}"
+          description: "{{ $labels.user }} ran more than 20 sudo commands in 10 minutes."
